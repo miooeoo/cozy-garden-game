@@ -1,0 +1,1169 @@
+/* ============================================
+   🌸 코지 가든 - 체리 블라썸 드림 테마
+   치유형 픽셀 아트 가드닝 시뮬레이션
+   ============================================ */
+
+/* ============= CSS 변수 (팔레트) ============= */
+:root {
+    /* 체리 블라썸 드림 팔레트 */
+    --minimal-rose: #F2C8DD;
+    --lime-ice: #D3DB7F;
+    --fairy-sparkle: #A5DBF8;
+    --cream-peach: #FFECD2;
+    --mocha-brown: #8B7355;
+    --deep-earth: #5D4E37;
+
+    /* UI 색상 */
+    --bg-main: #FFF8F0;
+    --bg-panel: rgba(255, 248, 240, 0.95);
+    --border-soft: rgba(139, 115, 85, 0.2);
+    --shadow-soft: rgba(93, 78, 55, 0.1);
+
+    /* 텍스트 색상 */
+    --text-primary: #5D4E37;
+    --text-secondary: #8B7355;
+
+    /* 그리드 설정 */
+    --grid-size: 32px;
+    --canvas-width: 800px;
+    --canvas-height: 544px;
+}
+
+/* ============= 기본 리셋 ============= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+    background: linear-gradient(135deg, var(--cream-peach) 0%, var(--minimal-rose) 50%, var(--fairy-sparkle) 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: var(--text-primary);
+}
+
+/* ============= 게임 컨테이너 ============= */
+#game-container {
+    display: grid;
+    grid-template-areas:
+        "header header"
+        "canvas toolbar"
+        "footer footer";
+    grid-template-columns: var(--canvas-width) 180px;
+    grid-template-rows: auto 1fr auto;
+    gap: 12px;
+    background: var(--bg-panel);
+    padding: 20px;
+    border-radius: 24px;
+    box-shadow:
+        0 20px 60px var(--shadow-soft),
+        0 0 0 1px var(--border-soft);
+    backdrop-filter: blur(10px);
+}
+
+/* ============= 헤더 ============= */
+#game-header {
+    grid-area: header;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    background: linear-gradient(90deg, var(--minimal-rose), var(--fairy-sparkle));
+    border-radius: 16px;
+    margin-bottom: 8px;
+}
+
+#game-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+#time-display {
+    padding: 6px 14px;
+    background: var(--bg-panel);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+
+/* ============= 게임 영역 ============= */
+#game-area {
+    grid-area: canvas;
+    position: relative;
+}
+
+#garden-canvas {
+    display: block;
+    border-radius: 16px;
+    background: var(--cream-peach);
+    box-shadow:
+        inset 0 2px 10px var(--shadow-soft),
+        0 4px 20px var(--shadow-soft);
+    cursor: crosshair;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+#status-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+#tooltip {
+    position: absolute;
+    padding: 8px 12px;
+    background: var(--bg-panel);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    box-shadow: 0 4px 12px var(--shadow-soft);
+    pointer-events: none;
+    z-index: 100;
+}
+
+#tooltip.hidden {
+    display: none;
+}
+
+/* ============= 도구 모음 ============= */
+#toolbar {
+    grid-area: toolbar;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    background: linear-gradient(180deg, var(--cream-peach), var(--bg-main));
+    border-radius: 16px;
+    border: 1px solid var(--border-soft);
+}
+
+.tool-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tool-section h3 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+/* 도구 버튼 */
+.tool-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-panel);
+    border: 2px solid var(--border-soft);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+}
+
+.tool-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-soft);
+    border-color: var(--fairy-sparkle);
+}
+
+.tool-btn.active {
+    background: linear-gradient(135deg, var(--fairy-sparkle), var(--minimal-rose));
+    border-color: var(--mocha-brown);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 씨앗 버튼 */
+#seed-inventory {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.seed-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-panel);
+    border: 2px solid var(--lime-ice);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.seed-btn:hover {
+    transform: scale(1.1);
+    background: var(--lime-ice);
+}
+
+.seed-btn.selected {
+    background: var(--lime-ice);
+    border-color: var(--mocha-brown);
+    box-shadow: 0 0 0 2px var(--lime-ice);
+}
+
+/* 토글 스위치 */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    appearance: none;
+    width: 44px;
+    height: 24px;
+    background: var(--border-soft);
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.toggle-switch input::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 2px 4px var(--shadow-soft);
+}
+
+.toggle-switch input:checked {
+    background: var(--lime-ice);
+}
+
+.toggle-switch input:checked::before {
+    transform: translateX(20px);
+}
+
+.toggle-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ============= 정보 패널 ============= */
+#info-panel {
+    grid-area: footer;
+    padding: 12px 16px;
+    background: linear-gradient(90deg, var(--lime-ice), var(--fairy-sparkle));
+    border-radius: 12px;
+    text-align: center;
+}
+
+#plant-info {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    font-size: 0.9rem;
+}
+
+#plant-info span {
+    padding: 4px 12px;
+    background: var(--bg-panel);
+    border-radius: 8px;
+}
+
+#plant-info.hidden {
+    display: none;
+}
+
+#hint-text {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* ============= 애니메이션 ============= */
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+@keyframes sparkle {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+@keyframes water-drop {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(20px) scale(0.5);
+        opacity: 0;
+    }
+}
+
+.bouncing {
+    animation: bounce 0.5s ease infinite;
+}
+
+/* ============= 반응형 ============= */
+@media (max-width: 1100px) {
+    #game-container {
+        grid-template-areas:
+            "header"
+            "canvas"
+            "toolbar"
+            "footer";
+        grid-template-columns: 1fr;
+        max-width: 100%;
+    }
+
+    #toolbar {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .tool-section {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+/* ============= HUD 스탯 ============= */
+#hud-stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#gold-hud {
+    padding: 6px 14px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--deep-earth);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+#time-display {
+    padding: 6px 14px;
+    background: var(--bg-panel);
+    border-radius: 20px;
+    font-size: 0.9rem;
+    box-shadow: inset 0 1px 3px var(--shadow-soft);
+}
+
+/* ============= 컨트롤 힌트 ============= */
+#control-hint {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    display: flex;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    background: rgba(255, 248, 240, 0.8);
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+#control-hint span {
+    padding: 2px 6px;
+    background: var(--bg-panel);
+    border-radius: 4px;
+}
+
+/* ============= 씨앗 카운트 ============= */
+.seed-btn {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-panel);
+    border: 2px solid var(--lime-ice);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.seed-count {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    background: var(--lime-ice);
+    border-radius: 9px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--deep-earth);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid var(--bg-panel);
+}
+
+/* ============= 상점 버튼 ============= */
+#shop-button {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 64px;
+    height: 64px;
+    font-size: 2rem;
+    background: linear-gradient(135deg, var(--lime-ice), var(--fairy-sparkle));
+    border: 3px solid var(--mocha-brown);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 20px var(--shadow-soft);
+    transition: all 0.3s ease;
+    z-index: 500;
+}
+
+#shop-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(165, 219, 248, 0.5);
+}
+
+#shop-button:active {
+    transform: scale(0.95);
+}
+
+/* ============= 인벤토리 바 ============= */
+#inventory-bar {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-panel);
+    padding: 10px 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px var(--shadow-soft);
+    border: 1px solid var(--border-soft);
+    z-index: 400;
+}
+
+.inv-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.inv-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+#crop-slots {
+    display: flex;
+    gap: 8px;
+}
+
+.inv-slot {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--cream-peach), var(--bg-main));
+    border: 2px solid var(--border-soft);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    position: relative;
+}
+
+.inv-slot span {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    min-width: 16px;
+    height: 16px;
+    background: var(--mocha-brown);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ============= 상점 모달 ============= */
+.shop-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(93, 78, 55, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.shop-modal.hidden {
+    display: none;
+}
+
+.shop-content {
+    background: var(--bg-panel);
+    padding: 24px;
+    border-radius: 24px;
+    width: 400px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(93, 78, 55, 0.3);
+}
+
+.shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.shop-header h2 {
+    font-size: 1.4rem;
+    color: var(--text-primary);
+}
+
+.shop-close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--minimal-rose);
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shop-close-btn:hover {
+    background: #E8A8C0;
+    transform: scale(1.1);
+}
+
+.shop-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.shop-tab {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border-soft);
+    background: var(--bg-main);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shop-tab:hover {
+    border-color: var(--fairy-sparkle);
+}
+
+.shop-tab.active {
+    background: linear-gradient(135deg, var(--fairy-sparkle), var(--lime-ice));
+    border-color: var(--mocha-brown);
+    font-weight: 600;
+}
+
+.shop-gold {
+    text-align: center;
+    padding: 10px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: var(--deep-earth);
+}
+
+.shop-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.shop-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-main);
+    border-radius: 12px;
+    border: 1px solid var(--border-soft);
+}
+
+.shop-item-icon {
+    font-size: 1.5rem;
+}
+
+.shop-item-name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.shop-item-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: var(--cream-peach);
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.shop-buy-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shop-buy-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.shop-sell-btn {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shop-sell-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.shop-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 24px;
+}
+
+/* ============= 추가 애니메이션 ============= */
+@keyframes pop {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.3);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+}
+
+.pop-effect {
+    animation: pop 0.3s ease;
+}
+
+/* ============= 플로팅 버튼 그룹 ============= */
+#floating-buttons {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 500;
+}
+
+#floating-buttons button {
+    width: 56px;
+    height: 56px;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, var(--lime-ice), var(--fairy-sparkle));
+    border: 3px solid var(--mocha-brown);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 20px var(--shadow-soft);
+    transition: all 0.3s ease;
+}
+
+#floating-buttons button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 30px rgba(165, 219, 248, 0.5);
+}
+
+#floating-buttons button:active {
+    transform: scale(0.95);
+}
+
+#journal-button {
+    background: linear-gradient(135deg, var(--cream-peach), var(--minimal-rose)) !important;
+}
+
+/* ============= 도감 모달 ============= */
+.journal-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(93, 78, 55, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.journal-modal.hidden {
+    display: none;
+}
+
+.journal-content {
+    background: var(--bg-panel);
+    padding: 24px;
+    border-radius: 24px;
+    width: 450px;
+    max-width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(93, 78, 55, 0.3);
+}
+
+.journal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.journal-header h2 {
+    font-size: 1.4rem;
+    color: var(--text-primary);
+}
+
+.journal-close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--minimal-rose);
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.journal-close-btn:hover {
+    background: #E8A8C0;
+    transform: scale(1.1);
+}
+
+.journal-entries {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.journal-entry {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-main);
+    border-radius: 12px;
+    border: 2px solid var(--border-soft);
+    transition: all 0.3s ease;
+}
+
+.journal-entry.mastered {
+    border-color: #FFD700;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+.journal-entry.undiscovered {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+
+.journal-entry-icon {
+    font-size: 2rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.journal-entry-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.journal-entry-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.journal-entry-stats {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.journal-entry-bonus {
+    font-size: 0.75rem;
+    color: var(--mocha-brown);
+    font-style: italic;
+}
+
+.journal-entry-progress {
+    height: 6px;
+    background: var(--border-soft);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.journal-entry-progress .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--lime-ice), var(--fairy-sparkle));
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* ============= 보상형 광고 버튼 ============= */
+.shop-ad-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px dashed var(--border-soft);
+}
+
+.shop-ad-btn {
+    width: 100%;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #4ECDC4, #44A08D);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(78, 205, 196, 0.3);
+}
+
+.shop-ad-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(78, 205, 196, 0.5);
+    background: linear-gradient(135deg, #5ED9D0, #52B29E);
+}
+
+.shop-ad-btn:active {
+    transform: translateY(0);
+}
+
+/* ============= 변종 식물 표시 ============= */
+.variant-glow {
+    animation: variant-sparkle 2s infinite;
+}
+
+@keyframes variant-sparkle {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9));
+    }
+}
+
+/* ============= 토스트 메시지 ============= */
+#toast-container {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    padding: 12px 20px;
+    background: var(--bg-panel);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px var(--shadow-soft);
+    font-size: 0.95rem;
+    transform: translateX(120%);
+    transition: transform 0.3s ease;
+    border-left: 4px solid var(--mocha-brown);
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast-success {
+    border-left-color: #4CAF50;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), var(--bg-panel));
+}
+
+.toast-info {
+    border-left-color: var(--fairy-sparkle);
+    background: linear-gradient(135deg, rgba(165, 219, 248, 0.1), var(--bg-panel));
+}
+
+.toast-warning {
+    border-left-color: #FF9800;
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), var(--bg-panel));
+}
+
+.toast-error {
+    border-left-color: #F44336;
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.1), var(--bg-panel));
+}
+
+/* ============= 배송 상자 모달 ============= */
+.shipping-bin-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(93, 78, 55, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.shipping-bin-modal.hidden {
+    display: none;
+}
+
+.shipping-bin-content {
+    background: var(--bg-panel);
+    padding: 24px;
+    border-radius: 24px;
+    width: 380px;
+    max-width: 90%;
+    box-shadow: 0 20px 60px rgba(93, 78, 55, 0.3);
+}
+
+.shipping-bin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.shipping-bin-header h2 {
+    font-size: 1.4rem;
+    color: var(--text-primary);
+}
+
+.shipping-bin-close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--minimal-rose);
+    border-radius: 50%;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.shipping-bin-close-btn:hover {
+    background: #E8A8C0;
+    transform: scale(1.1);
+}
+
+.shipping-bin-info {
+    padding: 10px;
+    background: rgba(165, 219, 248, 0.2);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+}
+
+.shipping-bin-items {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.shipping-bin-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    background: var(--bg-main);
+    border-radius: 10px;
+}
+
+.shipping-item-icon {
+    font-size: 1.5rem;
+}
+
+.shipping-item-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.shipping-item-count {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.shipping-bin-empty {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+}
+
+.shipping-bin-total {
+    padding: 12px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.shipping-bin-total span {
+    color: #FFD700;
+    font-size: 1.2rem;
+}
+
+.shipping-btn-deposit {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #8B4513, #A0522D);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.shipping-btn-deposit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
+}
+
+/* ============= 인기 아이템 표시 ============= */
+.shop-item.trending {
+    border: 2px solid #FF6B35;
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1), var(--bg-main));
+    animation: trending-pulse 2s infinite;
+}
+
+@keyframes trending-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(255, 107, 53, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+    }
+}
+
+/* ============= 모두 판매 버튼 ============= */
+.shop-sell-all {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px dashed var(--border-soft);
+}
+
+.shop-sell-all-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #5D4E37;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.shop-sell-all-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+}

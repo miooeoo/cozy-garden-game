@@ -230,14 +230,32 @@ class Character {
             const oldGridY = direction === 'down' ? nextGridY - 1 :
                 direction === 'up' ? nextGridY + 1 : nextGridY;
 
-            // 이전 위치에 심기
+            // 이전 위치에 심기 (씨앗 확인 필수)
             if (garden.isCellEmpty(oldGridX, oldGridY)) {
-                garden.plantSeed(this.selectedSeedForAutoPlant, oldGridX, oldGridY);
+                // 인벤토리에서 씨앗 확인 및 사용
+                const inventory = window.game?.inventory;
+                if (inventory && inventory.getSeedCount(this.selectedSeedForAutoPlant) > 0) {
+                    const planted = garden.plantSeed(this.selectedSeedForAutoPlant, oldGridX, oldGridY);
+                    if (planted) {
+                        inventory.useSeed(this.selectedSeedForAutoPlant);
+                    }
+
+                    // 씨앗이 모두 소진되면 자동 파종 모드 해제
+                    if (inventory.getSeedCount(this.selectedSeedForAutoPlant) <= 0) {
+                        this.autoPlantMode = false;
+                        console.log(`🌱 ${this.selectedSeedForAutoPlant} 씨앗이 모두 소진되어 자동 파종 모드가 해제되었습니다.`);
+
+                        // UI 토글도 업데이트
+                        const autoPlantToggle = document.getElementById('auto-plant-toggle');
+                        if (autoPlantToggle) autoPlantToggle.checked = false;
+                    }
+                }
             }
         }
 
         return true;
     }
+
 
     /**
      * 매 프레임 업데이트

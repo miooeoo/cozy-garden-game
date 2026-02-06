@@ -104,6 +104,9 @@ class RainCloudSystem {
         this.showRainbow = true;
         this.rainbowOpacity = 1;
 
+        // 구름을 화면 밖으로 이동
+        this.cloudY = -100;
+
         console.log('🌈 비가 그치고 무지개가 떴어요!');
 
         // 5초 후 무지개 페이드 아웃

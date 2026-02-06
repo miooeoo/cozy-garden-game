@@ -439,31 +439,8 @@ body {
     border: 2px solid var(--bg-panel);
 }
 
-/* ============= 상점 버튼 ============= */
-#shop-button {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 64px;
-    height: 64px;
-    font-size: 2rem;
-    background: linear-gradient(135deg, var(--lime-ice), var(--fairy-sparkle));
-    border: 3px solid var(--mocha-brown);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 4px 20px var(--shadow-soft);
-    transition: all 0.3s ease;
-    z-index: 500;
-}
-
-#shop-button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 30px rgba(165, 219, 248, 0.5);
-}
-
-#shop-button:active {
-    transform: scale(0.95);
-}
+/* ============= 상점 버튼 (플로팅 그룹으로 통합됨) ============= */
+/* 개별 스타일 제거됨 */
 
 /* ============= 인벤토리 바 ============= */
 #inventory-bar {
@@ -729,7 +706,7 @@ body {
 /* ============= 플로팅 버튼 그룹 ============= */
 #floating-buttons {
     position: fixed;
-    bottom: 24px;
+    bottom: 90px;
     right: 24px;
     display: flex;
     flex-direction: column;
@@ -1166,4 +1143,100 @@ body {
 .shop-sell-all-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+}
+
+/* ============= V3.0 퀵 택배 버튼 ============= */
+#quick-ship-btn {
+    position: fixed;
+    right: 0;
+    top: 40%;
+    transform: translateY(-50%);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    padding: 16px 12px;
+    background: linear-gradient(180deg, #FF9800, #F57C00);
+    color: white;
+    border: none;
+    border-radius: 12px 0 0 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: -4px 0 20px rgba(255, 152, 0, 0.3);
+    transition: all 0.3s ease;
+    z-index: 900;
+}
+
+#quick-ship-btn:hover {
+    padding-right: 20px;
+    box-shadow: -6px 0 30px rgba(255, 152, 0, 0.5);
+}
+
+#quick-ship-btn:active {
+    transform: translateY(-50%) scale(0.98);
+}
+
+/* 퀵 택배 버튼 맥동 애니메이션 */
+@keyframes ship-pulse {
+
+    0%,
+    100% {
+        box-shadow: -4px 0 20px rgba(255, 152, 0, 0.3);
+    }
+
+    50% {
+        box-shadow: -4px 0 30px rgba(255, 152, 0, 0.6);
+    }
+}
+
+#quick-ship-btn.has-crops {
+    animation: ship-pulse 2s infinite;
+}
+
+/* ============= 토스트 알림 ============= */
+#toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.toast {
+    padding: 12px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--deep-earth);
+    box-shadow: 0 4px 12px var(--shadow-soft);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-success {
+    border: 2px solid var(--lime-ice);
+    background: linear-gradient(135deg, #F1F8E9, #FFFFFF);
+}
+
+.toast-info {
+    border: 2px solid var(--fairy-sparkle);
+    background: linear-gradient(135deg, #E3F2FD, #FFFFFF);
+}
+
+.toast-warning {
+    border: 2px solid #FFD54F;
+    background: linear-gradient(135deg, #FFF8E1, #FFFFFF);
 }

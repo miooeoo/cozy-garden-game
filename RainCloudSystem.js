@@ -158,26 +158,30 @@ class RainCloudSystem {
      * @param {number} canvasHeight - 캔버스 높이
      */
     update(deltaTime, canvasWidth, canvasHeight) {
-        if (!this.isRaining) return;
+        // 비가 내리거나, 잔여 빗방울/파동이 있으면 업데이트 계속
+        if (!this.isRaining && this.raindrops.length === 0 && this.ripples.length === 0 && this.cloudY <= -100) return;
+
 
         const elapsed = Date.now() - this.rainStartTime;
         const progress = Math.min(elapsed / 1000, 1);  // 1초에 걸쳐 구름 등장
 
-        // 구름 등장 애니메이션
-        if (progress < 1) {
-            const bounceProgress = this.easeOutBounce(progress);
-            this.cloudY = -100 + (this.cloudTargetY + 100) * bounceProgress;
+        // 구름 등장 애니메이션 (비가 내리는 중에만)
+        if (this.isRaining) {
+            if (progress < 1) {
+                const bounceProgress = this.easeOutBounce(progress);
+                this.cloudY = -100 + (this.cloudTargetY + 100) * bounceProgress;
 
-            // Squash & Stretch
-            this.cloudScale = 1 + Math.sin(progress * Math.PI) * 0.2;
-        } else {
-            this.cloudY = this.cloudTargetY;
-            // 부드러운 흔들림
-            this.cloudScale = 1 + Math.sin(Date.now() / 500) * 0.05;
+                // Squash & Stretch
+                this.cloudScale = 1 + Math.sin(progress * Math.PI) * 0.2;
+            } else {
+                this.cloudY = this.cloudTargetY;
+                // 부드러운 흔들림
+                this.cloudScale = 1 + Math.sin(Date.now() / 500) * 0.05;
+            }
         }
 
-        // 빗방울 생성
-        if (Math.random() < 0.3) {
+        // 빗방울 생성 (비가 내릴 때만)
+        if (this.isRaining && Math.random() < 0.3) {
             this.raindrops.push({
                 x: Math.random() * canvasWidth,
                 y: 80,

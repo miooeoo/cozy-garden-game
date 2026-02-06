@@ -23,31 +23,46 @@ const WaterStatus = {
     PAUSED: 'paused'        // 일시 정지 (물 필요)
 };
 
-// 식물 타입 정의
+// 식물 타입 정의 (V4.0 - 씨앗 시각화)
 const PlantTypes = {
     tomato: {
         name: '토마토',
         emoji: '🍅',
-        growthTime: 5000,  // 각 단계당 밀리초
+        growthTime: 5000,
         color: '#FF6B6B',
-        companions: ['basil'],  // 동반 식물
-        bonusMultiplier: 1.2     // 이웃 보너스 시 배율
+        companions: ['basil'],
+        bonusMultiplier: 1.2,
+        // 씨앗 시각화
+        seedColor: '#D4A373',      // 연한 갈색
+        seedAccent: '#8B4513',     // 진한 갈색
+        seedShape: 'teardrop',     // 눈물방울
+        seedSize: 4
     },
     sunflower: {
         name: '해바라기',
         emoji: '🌻',
         growthTime: 4000,
         color: '#FFD93D',
-        companions: ['*'],  // 모든 식물과 친화
-        bonusMultiplier: 1.1
+        companions: ['*'],
+        bonusMultiplier: 1.1,
+        // 씨앗 시각화 (검은색+회색 줄무늬 타원)
+        seedColor: '#2C2C2C',
+        seedAccent: '#696969',
+        seedShape: 'striped-oval',
+        seedSize: 5
     },
     tulip: {
         name: '튤립',
         emoji: '🌷',
         growthTime: 4500,
         color: '#FF69B4',
-        companions: ['tulip'],  // 같은 종끼리 보너스
-        bonusMultiplier: 1.15
+        companions: ['tulip'],
+        bonusMultiplier: 1.15,
+        // 씨앗 봉투 스타일
+        seedColor: '#FFB6C1',
+        seedAccent: '#FF69B4',
+        seedShape: 'packet',
+        seedSize: 6
     },
     carrot: {
         name: '당근',
@@ -55,7 +70,12 @@ const PlantTypes = {
         growthTime: 6000,
         color: '#FF8C00',
         companions: ['onion'],
-        bonusMultiplier: 1.15
+        bonusMultiplier: 1.15,
+        // 작은 주황빛 씨앗
+        seedColor: '#8B4513',
+        seedAccent: '#FF8C00',
+        seedShape: 'tiny-round',
+        seedSize: 3
     },
     basil: {
         name: '바질',
@@ -64,9 +84,15 @@ const PlantTypes = {
         color: '#228B22',
         companions: ['tomato'],
         bonusMultiplier: 1.2,
-        harvestYield: 1  // 수확량
+        harvestYield: 1,
+        // 작은 검은 씨앗들
+        seedColor: '#1C1C1C',
+        seedAccent: '#228B22',
+        seedShape: 'dots',
+        seedSize: 2
     }
 };
+
 
 /**
  * 식물 클래스
@@ -103,7 +129,7 @@ class Plant {
         // 시각적 상태
         this.scale = 1;
         this.isWiggling = false;
-        this.soilWetness = 1;  // 흙 습기 (0-1)
+        this.soilWetness = 0;  // 흙 습기 (0-1) - 시작 시 물 필요!
     }
 
     /**
@@ -340,13 +366,13 @@ class Plant {
         ctx.ellipse(x + 16, y + 28, 14, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 수확 가능 Glow 효과
+        // 수확 가능 시 크기 확대 및 두근거림 효과
+        let finalScale = this.scale;
+
         if (this.isReadyToHarvest) {
-            const glowIntensity = 0.3 + Math.sin(Date.now() / 300) * 0.2;
-            ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity})`;
-            ctx.beginPath();
-            ctx.arc(x + 16, y + 14, 18, 0, Math.PI * 2);
-            ctx.fill();
+            // 두근거림 (1.2배 ~ 1.3배 사이로 움직임)
+            const pulse = Math.sin(Date.now() / 300) * 0.05;
+            finalScale = 1.25 + pulse;
         }
 
         // 식물 렌더링
@@ -354,54 +380,126 @@ class Plant {
 
         // 중심점 기준 스케일
         ctx.translate(x + 16, y + 16);
-        ctx.scale(this.scale, this.scale);
+        ctx.scale(finalScale, finalScale);
 
-        // 흔들림 효과 (수확 가능 시 지속적으로 흔들림)
-        if (this.isWiggling || this.isReadyToHarvest) {
-            const wiggleSpeed = this.isReadyToHarvest ? 100 : 50;
-            const wiggle = Math.sin(Date.now() / wiggleSpeed) * 3;
+        // 흔들림 효과 (수확 가능 시 멈춤 - 크기로 강조하므로)
+        if (this.isWiggling && !this.isReadyToHarvest) {
+            const wiggle = Math.sin(Date.now() / 50) * 3;
             ctx.rotate(wiggle * Math.PI / 180);
         }
 
-        // 이모지 렌더링 (픽셀 아트 스타일)
-        ctx.font = '24px serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.getDisplayEmoji(), 0, -4);
+        // 씨앗 단계: 작물별 고유 씨앗 렌더링
+        if (this.stage === GrowthStage.SEED) {
+            this.renderSeed(ctx);
+        } else {
+            // 이모지 렌더링
+            ctx.font = '24px serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(this.getDisplayEmoji(), 0, -4);
+        }
 
         ctx.restore();
+    }
 
-        // 일시 정지 인디케이터
-        if (this.isPaused) {
-            ctx.fillStyle = 'rgba(165, 219, 248, 0.7)';  // fairy-sparkle
-            ctx.font = '12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('💧?', x + 16, y + 4);
+    /**
+     * 작물별 고유 씨앗 렌더링 (V4.0)
+     */
+    renderSeed(ctx) {
+        const info = this.typeInfo;
+        const seedColor = info.seedColor || '#8B4513';
+        const seedAccent = info.seedAccent || '#654321';
+        const seedShape = info.seedShape || 'round';
+        const seedSize = info.seedSize || 4;
+
+        ctx.translate(0, 8);  // 흙 위에 위치
+
+        switch (seedShape) {
+            case 'striped-oval':
+                // 해바라기: 검은색+회색 줄무늬 타원
+                ctx.fillStyle = seedColor;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, seedSize, seedSize * 1.5, Math.PI / 6, 0, Math.PI * 2);
+                ctx.fill();
+                // 줄무늬
+                ctx.strokeStyle = seedAccent;
+                ctx.lineWidth = 1;
+                for (let i = -2; i <= 2; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(i * 1.5, -seedSize);
+                    ctx.lineTo(i * 1.5, seedSize);
+                    ctx.stroke();
+                }
+                break;
+
+            case 'packet':
+                // 튤립: 씨앗 봉투
+                ctx.fillStyle = seedColor;
+                ctx.fillRect(-seedSize, -seedSize * 1.2, seedSize * 2, seedSize * 2);
+                // 봉투 상단 접힘
+                ctx.fillStyle = seedAccent;
+                ctx.beginPath();
+                ctx.moveTo(-seedSize, -seedSize * 1.2);
+                ctx.lineTo(0, -seedSize * 0.5);
+                ctx.lineTo(seedSize, -seedSize * 1.2);
+                ctx.closePath();
+                ctx.fill();
+                // 작은 꽃 그림
+                ctx.fillStyle = '#FF69B4';
+                ctx.beginPath();
+                ctx.arc(0, seedSize * 0.3, 2, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+
+            case 'teardrop':
+                // 토마토: 눈물방울
+                ctx.fillStyle = seedColor;
+                ctx.beginPath();
+                ctx.moveTo(0, -seedSize);
+                ctx.bezierCurveTo(seedSize, -seedSize / 2, seedSize, seedSize, 0, seedSize);
+                ctx.bezierCurveTo(-seedSize, seedSize, -seedSize, -seedSize / 2, 0, -seedSize);
+                ctx.fill();
+                // 하이라이트
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(-1, -2, 1, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+
+            case 'tiny-round':
+                // 당근: 작은 둥근 씨앗
+                ctx.fillStyle = seedColor;
+                ctx.beginPath();
+                ctx.arc(0, 0, seedSize, 0, Math.PI * 2);
+                ctx.fill();
+                // 주황빛 하이라이트
+                ctx.fillStyle = seedAccent;
+                ctx.beginPath();
+                ctx.arc(-1, -1, 1, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+
+            case 'dots':
+                // 바질: 여러 개의 작은 점
+                ctx.fillStyle = seedColor;
+                const positions = [
+                    [0, 0], [-3, -2], [3, -1], [-2, 2], [2, 3]
+                ];
+                for (const [dx, dy] of positions) {
+                    ctx.beginPath();
+                    ctx.arc(dx, dy, seedSize, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                break;
+
+            default:
+                // 기본 둥근 씨앗
+                ctx.fillStyle = seedColor;
+                ctx.beginPath();
+                ctx.arc(0, 0, seedSize, 0, Math.PI * 2);
+                ctx.fill();
         }
-
-        // 이웃 보너스 표시
-        if (this.neighborBonus > 0 && !this.isPaused) {
-            ctx.fillStyle = '#D3DB7F';  // lime-ice
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`+${this.neighborBonus}`, x + 28, y + 6);
-        }
-
-        // 진행 바 (씨앗이 아니고 완전 성장이 아닐 때)
-        if (this.stage !== GrowthStage.SEED && !this.isFullyGrown) {
-            const barWidth = 24;
-            const barHeight = 3;
-            const barX = x + 4;
-            const barY = y + 30;
-
-            // 배경
-            ctx.fillStyle = 'rgba(139, 115, 85, 0.5)';
-            ctx.fillRect(barX, barY, barWidth, barHeight);
-
-            // 진행
-            ctx.fillStyle = '#D3DB7F';  // lime-ice
-            ctx.fillRect(barX, barY, barWidth * (this.growthProgress / 100), barHeight);
-        }
+        // renderSeed 메서드 끝 - 일시정지/보너스/진행바 표시는 render 메서드에서 처리
     }
 
     /**

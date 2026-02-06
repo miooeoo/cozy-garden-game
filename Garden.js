@@ -27,6 +27,13 @@ class Garden {
             this.grid[y] = new Array(gridWidth).fill(null);
         }
 
+        // 경작된 셀 (파종된 곳만 흙으로 표시)
+        this.tilledCells = new Set();
+
+        // 잔디 텍스처 (랜덤 생성)
+        this.grassDecorations = [];
+        this.generateGrassDecorations();
+
         // 식물 목록 (빠른 순회용)
         this.plants = [];
 
@@ -39,6 +46,34 @@ class Garden {
             fullyGrown: 0,
             totalWaterGiven: 0
         };
+    }
+
+    /**
+     * 잔디 장식 생성 (풀, 작은 꽃)
+     */
+    generateGrassDecorations() {
+        for (let y = 0; y < this.gridHeight; y++) {
+            for (let x = 0; x < this.gridWidth; x++) {
+                // 30% 확률로 작은 풀
+                if (Math.random() < 0.3) {
+                    this.grassDecorations.push({
+                        x: x * 32 + Math.random() * 24 + 4,
+                        y: y * 32 + Math.random() * 24 + 4,
+                        type: 'tuft',
+                        size: 2 + Math.random() * 2
+                    });
+                }
+                // 5% 확률로 작은 들꽃
+                if (Math.random() < 0.05) {
+                    this.grassDecorations.push({
+                        x: x * 32 + Math.random() * 28 + 2,
+                        y: y * 32 + Math.random() * 28 + 2,
+                        type: 'flower',
+                        color: Math.random() < 0.5 ? '#FFFFFF' : '#FFFF99'
+                    });
+                }
+            }
+        }
     }
 
     /**
@@ -107,6 +142,9 @@ class Garden {
         // 그리드에 배치
         this.grid[gridY][gridX] = plant;
         this.plants.push(plant);
+
+        // 경작 표시 (잔디 → 흙)
+        this.tilledCells.add(`${gridX},${gridY}`);
 
         // 통계 업데이트
         this.stats.totalPlants++;
@@ -305,8 +343,50 @@ class Garden {
      * @param {CanvasRenderingContext2D} ctx - 캔버스 컨텍스트
      */
     render(ctx) {
+        // 경작된 셀만 흙으로 렌더링
+        for (const key of this.tilledCells) {
+            const [x, y] = key.split(',').map(Number);
+            const px = x * this.cellSize;
+            const py = y * this.cellSize;
+
+            // 흙 배경
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(px + 2, py + 2, 28, 28);
+
+            // 흙 텍스처
+            ctx.fillStyle = '#7A6548';
+            ctx.fillRect(px + 5, py + 8, 3, 2);
+            ctx.fillRect(px + 15, py + 5, 4, 2);
+            ctx.fillRect(px + 22, py + 15, 3, 2);
+            ctx.fillRect(px + 8, py + 20, 4, 2);
+        }
+
+        // 잔디 장식 렌더링 (경작되지 않은 곳만)
+        for (const deco of this.grassDecorations) {
+            const gx = Math.floor(deco.x / 32);
+            const gy = Math.floor(deco.y / 32);
+            if (this.tilledCells.has(`${gx},${gy}`)) continue;
+
+            if (deco.type === 'tuft') {
+                // 작은 풀
+                ctx.fillStyle = '#6B8E23';
+                ctx.beginPath();
+                ctx.moveTo(deco.x, deco.y);
+                ctx.lineTo(deco.x - deco.size, deco.y - deco.size * 2);
+                ctx.lineTo(deco.x + deco.size, deco.y - deco.size * 2);
+                ctx.closePath();
+                ctx.fill();
+            } else if (deco.type === 'flower') {
+                // 작은 들꽃
+                ctx.fillStyle = deco.color;
+                ctx.beginPath();
+                ctx.arc(deco.x, deco.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
         // 그리드 라인 (반투명)
-        ctx.strokeStyle = 'rgba(139, 115, 85, 0.15)';
+        ctx.strokeStyle = 'rgba(139, 115, 85, 0.1)';
         ctx.lineWidth = 1;
 
         for (let x = 0; x <= this.gridWidth; x++) {

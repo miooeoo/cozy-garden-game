@@ -68,7 +68,8 @@ class Shop {
                 </div>
                 
                 <div class="shop-tabs">
-                    <button class="shop-tab active" data-tab="buy">🛒 구매</button>
+                    <button class="shop-tab active" data-tab="buy">🛒 씨앗</button>
+                    <button class="shop-tab" data-tab="tools">⛏️ 도구</button>
                     <button class="shop-tab" data-tab="sell">💰 판매</button>
                 </div>
                 
@@ -160,6 +161,9 @@ class Shop {
                 const item = this.createItemElement(type, info, 'buy');
                 container.appendChild(item);
             }
+        } else if (this.activeTab === 'tools') {
+            // 도구 구매
+            this.renderToolsTab(container);
         } else {
             // 작물 판매
             let hasItems = false;
@@ -196,6 +200,58 @@ class Shop {
                 container.innerHTML = '<p class="shop-empty">판매할 작물이 없어요 🌱</p>';
             }
         }
+    }
+
+    /**
+     * 도구 탭 렌더링 (V2.0)
+     */
+    renderToolsTab(container) {
+        const obstacles = ObstacleManager.getInstance();
+        const hasPickaxe = obstacles.hasPickaxe;
+
+        const toolDiv = document.createElement('div');
+        toolDiv.className = 'shop-item tool-item';
+
+        if (hasPickaxe) {
+            toolDiv.innerHTML = `
+                <span class="shop-item-icon">⛏️</span>
+                <span class="shop-item-name">곱괭이</span>
+                <span class="shop-item-owned">✅ 보유 중</span>
+            `;
+        } else {
+            toolDiv.innerHTML = `
+                <span class="shop-item-icon">⛏️</span>
+                <span class="shop-item-name">곱괭이</span>
+                <span class="shop-item-desc">대형 바위를 깨요</span>
+                <button class="shop-buy-btn" id="buy-pickaxe-btn">
+                    구매 100,000G
+                </button>
+            `;
+
+            setTimeout(() => {
+                const btn = document.getElementById('buy-pickaxe-btn');
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        if (obstacles.buyPickaxe(this.inventory)) {
+                            this.updateGoldDisplay();
+                            this.renderItems();
+                        }
+                    });
+                }
+            }, 0);
+        }
+
+        container.appendChild(toolDiv);
+
+        // 도구 설명
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'shop-tool-info';
+        infoDiv.innerHTML = `
+            <p style="color: #888; font-size: 0.85rem; margin-top: 16px;">
+                🪨 바위는 5~10칸 크기로 나타나며, 곱괭이로 1칸씩 깨야 해요.
+            </p>
+        `;
+        container.appendChild(infoDiv);
     }
 
     /**
@@ -365,7 +421,24 @@ class Shop {
             this.open();
         }
     }
+
+    /**
+     * 특정 탭으로 상점 열기 (V3.0)
+     * @param {string} tabName - 'buy' 또는 'sell'
+     */
+    openWithTab(tabName = 'sell') {
+        this.open();
+        this.activeTab = tabName;
+
+        // 탭 UI 업데이트
+        document.querySelectorAll('.shop-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+
+        this.renderItems();
+    }
 }
+
 
 // 전역 내보내기
 window.Shop = Shop;

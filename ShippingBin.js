@@ -344,50 +344,5 @@ class ShippingBin {
     }
 }
 
-/**
- * 토스트 메시지 시스템 (싱글톤)
- */
-const ToastSystem = {
-    container: null,
-
-    init() {
-        if (this.container) return;
-
-        this.container = document.createElement('div');
-        this.container.id = 'toast-container';
-        document.body.appendChild(this.container);
-    },
-
-    /**
-     * 토스트 표시
-     * @param {string} message - 메시지
-     * @param {number} duration - 표시 시간 (ms)
-     * @param {string} type - 타입 (info, success, warning, error)
-     */
-    show(message, duration = 3000, type = 'info') {
-        this.init();
-
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-
-        this.container.appendChild(toast);
-
-        // 애니메이션 시작
-        requestAnimationFrame(() => {
-            toast.classList.add('show');
-        });
-
-        // 자동 제거
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                toast.remove();
-            }, 300);
-        }, duration);
-    }
-};
-
 // 전역 내보내기
 window.ShippingBin = ShippingBin;
-window.ToastSystem = ToastSystem;

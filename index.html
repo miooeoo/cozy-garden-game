@@ -31,9 +31,9 @@
 
             <!-- 컨트롤 힌트 -->
             <div id="control-hint">
-                <span>🎮 WASD: 이동</span>
-                <span>SPACE: 상호작용</span>
-                <span>P: 자동파종</span>
+                <span>🎮 클릭: 이동+심기</span>
+                <span>WASD: 이동</span>
+                <span>드래그: 수확</span>
             </div>
         </main>
 
@@ -108,6 +108,11 @@
             </button>
         </div>
 
+        <!-- 퀵 택배 버튼 (V3.0) -->
+        <button id="quick-ship-btn" title="즉시 판매">
+            📦 택배 보내기
+        </button>
+
         <!-- 인벤토리 바 -->
         <div id="inventory-bar">
             <div class="inv-section">
@@ -130,6 +135,7 @@
     <audio id="sfx-harvest"></audio>
 
     <!-- JavaScript 모듈 -->
+    <script src="ToastSystem.js"></script>
     <script src="Plant.js"></script>
     <script src="Garden.js"></script>
     <script src="Character.js"></script>
@@ -139,6 +145,8 @@
     <script src="RainCloudSystem.js"></script>
     <script src="MarketSystem.js"></script>
     <script src="ShippingBin.js"></script>
+    <script src="ObstacleManager.js"></script>
+    <script src="AnimalController.js"></script>
     <script src="Shop.js"></script>
     <script src="DragDropSystem.js"></script>
     <script src="game.js"></script>

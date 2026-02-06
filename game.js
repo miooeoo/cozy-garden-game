@@ -4,7 +4,7 @@
  * 치유형 픽셀 아트 가드닝 시뮬레이션
  * 핵심 철학: 실패 없음, 풍요로움, 안전함
  * 
- * V2.0 - 캐릭터 조작형 RPG 확장
+ * V3.0 - 농부의 삶 & 다이내믹 환경
  */
 
 // ============ 전역 게임 상태 ============
@@ -19,69 +19,114 @@ window.gameState = {
 // ============ 메인 게임 클래스 ============
 class CozyGardenGame {
     constructor() {
-        // 캔버스 설정
-        this.canvas = document.getElementById('garden-canvas');
-        this.ctx = this.canvas.getContext('2d');
+        let step = '시작';
+        try {
+            // 캔버스 설정
+            step = '캔버스 설정';
+            this.canvas = document.getElementById('garden-canvas');
+            this.ctx = this.canvas.getContext('2d');
 
-        // 픽셀 아트 선명도 설정
-        this.ctx.imageSmoothingEnabled = false;
+            // 픽셀 아트 선명도 설정
+            this.ctx.imageSmoothingEnabled = false;
 
-        // 게임 시스템 인스턴스
-        this.garden = new Garden(25, 17);  // 800/32=25, 544/32=17
-        this.dragDrop = new DragDropSystem(this.canvas, this.garden);
+            // 게임 시스템 인스턴스
+            step = 'Garden 생성';
+            this.garden = new Garden(25, 17);  // 800/32=25, 544/32=17
 
-        // 새로운 시스템들
-        this.character = new Character(12, 8);  // 중앙에서 시작
-        this.inventory = new Inventory();
-        this.shop = new Shop(this.inventory);
+            step = 'DragDropSystem 생성';
+            this.dragDrop = new DragDropSystem(this.canvas, this.garden);
 
-        // V3.0 신규 시스템들
-        this.journal = PlantJournal.getInstance();
-        this.mutation = MutationManager.getInstance();
-        this.rainCloud = RainCloudSystem.getInstance();
+            // 캐릭터 시스템
+            step = 'Character 생성';
+            this.character = new Character(12, 8);  // 중앙에서 시작
 
-        // V4.0 경제 시스템
-        this.market = MarketSystem.getInstance();
-        this.shippingBin = new ShippingBin(1, 1);  // 정원 입구
+            step = 'Inventory 생성';
+            this.inventory = new Inventory();
 
-        // 시간 시스템
-        this.gameStartTime = Date.now();
-        this.dayDuration = 120000;  // 2분 = 하루
-        this.gameDay = 0;           // 게임 일차
-        this.lastHour = -1;         // 마지막 시간 (정산용)
+            step = 'Shop 생성';
+            this.shop = new Shop(this.inventory);
 
-        // 파티클 시스템 (물방울 등)
-        this.particles = [];
+            // V3.0 신규 시스템들
+            step = 'PlantJournal 생성';
+            this.journal = PlantJournal.getInstance();
 
-        // 캐릭터 콜백 설정
-        this.character.onFootstep = (x, y) => {
-            this.createDustParticles(x, y);
-        };
+            step = 'MutationManager 생성';
+            this.mutation = MutationManager.getInstance();
 
-        this.character.onInteraction = (gridX, gridY) => {
-            this.handleInteraction(gridX, gridY);
-        };
+            step = 'RainCloudSystem 생성';
+            this.rainCloud = RainCloudSystem.getInstance();
 
-        // 인벤토리 UI 업데이트 콜백
-        this.inventory.onUpdate = (inv) => {
-            this.updateInventoryUI(inv);
-        };
+            step = 'ObstacleManager 생성';
+            this.obstacles = ObstacleManager.getInstance();  // 바위 시스템
 
-        // UI 요소 설정
-        this.setupUI();
+            step = 'AnimalController 생성';
+            this.animalController = AnimalController.getInstance();  // 동물 방문 시스템
 
-        // 저장 데이터 로드
-        this.garden.load();
-        this.inventory.load();
+            // V4.0 경제 시스템
+            step = 'MarketSystem 생성';
+            this.market = MarketSystem.getInstance();
 
-        // 자동 저장 (30초마다)
-        setInterval(() => {
-            this.garden.save();
-            this.inventory.save();
-        }, 30000);
+            step = 'ShippingBin 생성';
+            this.shippingBin = new ShippingBin(1, 1);  // 정원 입구
 
-        console.log('🌸 코지 가든 V2.0에 오신 것을 환영합니다!');
-        console.log('🎮 WASD: 이동 | SPACE: 상호작용 | P: 자동 파종');
+            // 시간 시스템
+            step = '시간 시스템 설정';
+            this.gameStartTime = Date.now();
+            this.dayDuration = 120000;  // 2분 = 하루
+            this.gameDay = 0;           // 게임 일차
+            this.lastHour = -1;         // 마지막 시간 (정산용)
+
+            // 파티클 시스템
+            this.particles = [];
+
+            // 캐릭터 콜백 설정
+            step = '캐릭터 콜백 설정';
+            this.character.onFootstep = (x, y) => {
+                this.createDustParticles(x, y);
+            };
+
+            this.character.onInteraction = (gridX, gridY) => {
+                this.handleInteraction(gridX, gridY);
+            };
+
+            // 클릭투무브 심기 완료 콜백
+            this.character.onPlantComplete = (gridX, gridY, plantType) => {
+                this.completePlanting(gridX, gridY, plantType);
+            };
+
+            // 인벤토리 UI 업데이트 콜백
+            this.inventory.onUpdate = (inv) => {
+                this.updateInventoryUI(inv);
+            };
+
+            // 바위 먼지 파티클 콜백
+            step = 'ObstacleManager 콜백 설정';
+            this.obstacles.onDustParticle = (x, y, type) => {
+                this.createRockParticles(x, y, type);
+            };
+
+            // UI 요소 설정
+            step = 'UI 요소 설정 (setupUI)';
+            this.setupUI();
+
+            // 저장 데이터 로드
+            step = '저장 데이터 로드';
+            this.garden.load();
+            this.inventory.load();
+
+            // 자동 저장 (30초마다)
+            setInterval(() => {
+                this.garden.save();
+                this.inventory.save();
+            }, 30000);
+
+            console.log('🌸 코지 가든 V3.0 - 농부의 삶!');
+            console.log('🎮 클릭: 이동+심기 | WASD: 이동 | 드래그: 수확');
+
+        } catch (e) {
+            // 상세한 에러 메시지 표시
+            throw new Error(`[${step}] ${e.message}`);
+        }
     }
 
     /**
@@ -91,6 +136,7 @@ class CozyGardenGame {
         // 도구 버튼
         document.querySelectorAll('.tool-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 클릭 투 무브 방지
                 document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
 
@@ -107,6 +153,7 @@ class CozyGardenGame {
         // 씨앗 버튼
         document.querySelectorAll('.seed-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 클릭 투 무브 방지
                 const plantType = btn.dataset.plant;
 
                 // 씨앗이 있는지 확인
@@ -152,7 +199,8 @@ class CozyGardenGame {
         // 상점 버튼
         const shopButton = document.getElementById('shop-button');
         if (shopButton) {
-            shopButton.addEventListener('click', () => {
+            shopButton.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.shop.toggle();
             });
         }
@@ -160,9 +208,23 @@ class CozyGardenGame {
         // 도감 버튼
         const journalButton = document.getElementById('journal-button');
         if (journalButton) {
-            journalButton.addEventListener('click', () => {
+            journalButton.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.journal.toggle();
             });
+        }
+
+        // 퀵 택배 버튼 (V3.0)
+        const quickShipBtn = document.getElementById('quick-ship-btn');
+        if (quickShipBtn) {
+            quickShipBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 상점 열기 + 판매 탭으로 전환
+                this.shop.openWithTab('sell');
+            });
+
+            // 수확물이 있으면 맥동 애니메이션
+            this.updateQuickShipButton();
         }
 
         // 캔버스 클릭 (물주기/심기/수확)
@@ -274,7 +336,7 @@ class CozyGardenGame {
     }
 
     /**
-     * 캔버스 클릭 처리
+     * 캔버스 클릭 처리 - 클릭 투 무브 파종 시스템
      */
     handleCanvasClick(e) {
         const rect = this.canvas.getBoundingClientRect();
@@ -285,37 +347,137 @@ class CozyGardenGame {
         const y = (e.clientY - rect.top) * scaleY;
 
         const gridPos = this.garden.pixelToGrid(x, y);
+        const { x: gridX, y: gridY } = gridPos;
 
-        switch (gameState.selectedTool) {
-            case 'water':
-                this.waterAt(gridPos.x, gridPos.y, x, y);
-                break;
+        // 0. 동물 쓰다듬기 체크
+        if (this.animalController && this.animalController.handleClick(x, y)) {
+            return;
+        }
 
-            case 'plant':
-                if (gameState.selectedSeed) {
-                    this.plantAt(gridPos.x, gridPos.y);
-                }
-                break;
+        // 1. 바위가 있으면 제거 시도
+        if (this.obstacles.tryRemoveRockAt(gridX, gridY)) {
+            return;
+        }
 
-            case 'harvest':
-                this.harvestAt(gridPos.x, gridPos.y);
-                break;
+        // 2. 식물이 있으면 정보 표시 또는 물주기
+        const plant = this.garden.getPlantAt(gridX, gridY);
+        if (plant) {
+            if (gameState.selectedTool === 'water') {
+                this.waterAt(gridX, gridY, x, y);
+            } else {
+                this.showPlantInfo(gridX, gridY);
+            }
+            return;
+        }
 
-            default:
-                this.showPlantInfo(gridPos.x, gridPos.y);
-                break;
+        // 3. 빈 타일 + 씨앗 선택됨 → 클릭 투 무브 파종
+        if (gameState.selectedSeed && this.inventory.getSeedCount(gameState.selectedSeed) > 0) {
+            // 바위 체크
+            if (this.obstacles.hasRockAt(gridX, gridY)) {
+                console.log('🪨 바위가 있어서 심을 수 없어요!');
+                return;
+            }
+
+            // 캐릭터를 목표 위치로 이동시키고 도착 후 심기
+            this.character.moveToClick(gridX, gridY, gameState.selectedSeed);
+        } else {
+            // 그냥 이동만
+            this.character.moveToClick(gridX, gridY, null);
         }
     }
 
     /**
-     * 물주기
+     * 클릭 투 무브 심기 완료 (캐릭터 도착 후 호출)
+     */
+    completePlanting(gridX, gridY, plantType) {
+        if (!plantType) return;
+
+        // 씨앗 재확인
+        if (this.inventory.getSeedCount(plantType) <= 0) {
+            if (typeof ToastSystem !== 'undefined') {
+                ToastSystem.show('🌱 씨앗이 없어요!', 1500, 'warning');
+            }
+            return;
+        }
+
+        // 바위/식물 재확인
+        if (!this.garden.isCellEmpty(gridX, gridY) || this.obstacles.hasRockAt(gridX, gridY)) {
+            console.log('❌ 이미 무언가가 있어요!');
+            return;
+        }
+
+        // 심기 실행
+        const plant = this.garden.plantSeed(plantType, gridX, gridY);
+
+        if (plant) {
+            this.inventory.useSeed(plantType);
+
+            // 파티클 효과
+            const pixel = this.garden.gridToPixel(gridX, gridY);
+            this.createSparkleParticles(pixel.x + 16, pixel.y + 16);
+
+            console.log(`🌱 ${plant.typeInfo.name}을(를) 심었어요!`);
+        }
+    }
+
+    /**
+     * 바위 먼지 파티클 생성
+     */
+    createRockParticles(x, y, type) {
+        const count = type === 'spawn' ? 8 : 12;
+        const color = type === 'spawn' ? '#8D6E63' : '#A1887F';
+
+        for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 / count) * i;
+            const speed = type === 'spawn' ? 2 : 4;
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed + (Math.random() - 0.5),
+                vy: Math.sin(angle) * speed - 2,
+                life: 0.8,
+                type: 'rock'
+            });
+        }
+    }
+
+
+    /**
+     * 물주기 (농부 주변 3x3 전체에 물을 줌)
      */
     waterAt(gridX, gridY, pixelX, pixelY) {
-        const watered = this.garden.waterPlantAt(gridX, gridY);
+        // 농부 위치 기준으로 3x3 범위에 물 주기
+        const charX = this.character.gridX;
+        const charY = this.character.gridY;
 
-        if (watered) {
-            // 물방울 파티클 생성
-            this.createWaterParticles(pixelX, pixelY);
+        let wateredCount = 0;
+
+        // 농부 주변 3x3 전체에 물 주기
+        for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+                const wx = charX + dx;
+                const wy = charY + dy;
+                if (this.garden.waterPlantAt(wx, wy)) {
+                    wateredCount++;
+                    // 물방울 파티클 (각 위치에)
+                    const pos = this.garden.gridToPixel(wx, wy);
+                    this.createWaterParticles(pos.x + 16, pos.y + 16);
+                }
+            }
+        }
+
+        if (wateredCount > 0) {
+            // 캐릭터 도구: 물뿌리개
+            this.character.setTool('watering_can');
+            setTimeout(() => this.character.setTool('none'), 500);
+
+            if (typeof ToastSystem !== 'undefined') {
+                ToastSystem.show(`💧 ${wateredCount}개의 작물에 물을 줬어요!`, 1200, 'success');
+            }
+        } else {
+            if (typeof ToastSystem !== 'undefined') {
+                ToastSystem.show('💧 주변에 물 줄 작물이 없어요', 1000, 'info');
+            }
         }
     }
 
@@ -384,6 +546,10 @@ class CozyGardenGame {
             // 수확 파티클 (튀어오름)
             this.createHarvestParticles(plant.pixelX + 16, plant.pixelY + 16, plant.typeInfo.emoji);
 
+            // 캐릭터 도구: 바구니
+            this.character.setTool('basket');
+            setTimeout(() => this.character.setTool('none'), 600);
+
             // 정원에서 제거
             this.garden.removePlant(gridX, gridY);
 
@@ -451,6 +617,19 @@ class CozyGardenGame {
             });
         }
     }
+
+    /**
+     * 퀵 택배 버튼 상태 업데이트 (V3.0)
+     * 수확물이 있으면 맥동 애니메이션 표시
+     */
+    updateQuickShipButton() {
+        const btn = document.getElementById('quick-ship-btn');
+        if (!btn) return;
+
+        const hasCrops = Object.values(this.inventory.crops).some(count => count > 0);
+        btn.classList.toggle('has-crops', hasCrops);
+    }
+
 
     /**
      * 흙먼지 파티클 (발자국)
@@ -538,11 +717,17 @@ class CozyGardenGame {
                 this.ctx.font = '20px serif';
                 this.ctx.textAlign = 'center';
                 this.ctx.fillText(p.emoji, p.x, p.y);
+            } else if (p.type === 'rock') {
+                this.ctx.fillStyle = '#8D6E63';  // 바위 먼지
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                this.ctx.fill();
             }
 
             this.ctx.globalAlpha = 1;
         }
     }
+
 
     /**
      * 시간대 업데이트
@@ -588,10 +773,10 @@ class CozyGardenGame {
     renderBackground() {
         // 기본 배경색
         const bgColors = {
-            dawn: '#FFE4E1',    // 미스티 로즈
-            day: '#FFECD2',     // 크림 피치
-            evening: '#FFD4A3', // 따뜻한 오렌지
-            night: '#E8E0F0'    // 라벤더 안개
+            day: '#91CA72',     // 파스텔 잔디 녹색
+            morning: '#A8D98A', // 아침 이슬 녹색
+            evening: '#7CB35D', // 저녁 따뜻한 녹색
+            night: '#5A9A50'    // 밤 진한 녹색
         };
 
         this.ctx.fillStyle = bgColors[gameState.timeOfDay] || bgColors.day;
@@ -634,6 +819,14 @@ class CozyGardenGame {
 
         // 비구름 시스템 업데이트
         this.rainCloud.update(deltaTime, this.canvas.width, this.canvas.height);
+
+        // 바위 시스템 업데이트
+        this.obstacles.update(deltaTime, this.garden);
+
+        // 동물 방문 시스템 업데이트
+        if (this.animalController) {
+            this.animalController.update(deltaTime);
+        }
     }
 
     /**
@@ -673,26 +866,53 @@ class CozyGardenGame {
      * 메인 렌더 루프
      */
     render() {
-        // 배경
-        this.renderBackground();
+        try {
+            // 배경 - 매 프레임 캔버스 클리어
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.renderBackground();
+        } catch (e) { console.error('배경 렌더링 에러:', e); }
 
-        // 정원 (그리드 + 식물)
-        this.garden.render(this.ctx);
+        try {
+            // 정원 (그리드 + 식물)
+            this.garden.render(this.ctx);
+        } catch (e) { console.error('정원 렌더링 에러:', e); }
 
-        // 드래그 앤 드롭 미리보기
-        this.dragDrop.render(this.ctx);
+        try {
+            // 드래그 앤 드롭 미리보기
+            this.dragDrop.render(this.ctx);
+        } catch (e) { console.error('드래그드롭 렌더링 에러:', e); }
 
-        // 캐릭터
-        this.character.render(this.ctx);
+        try {
+            // 배송 상자 렌더링 (캐릭터보다 먼저)
+            this.shippingBin.render(this.ctx);
+        } catch (e) { console.error('배송상자 렌더링 에러:', e); }
 
-        // 파티클
-        this.renderParticles();
+        try {
+            // 바위 렌더링 (캐릭터보다 먼저)
+            this.obstacles.render(this.ctx);
+        } catch (e) { console.error('바위 렌더링 에러:', e); }
 
-        // 배송 상자 렌더링
-        this.shippingBin.render(this.ctx);
+        try {
+            // 동물 렌더링
+            if (this.animalController) {
+                this.animalController.render(this.ctx);
+            }
+        } catch (e) { console.error('동물 렌더링 에러:', e); }
 
-        // 비구름 시스템 렌더링 (최상위)
-        this.rainCloud.render(this.ctx, this.canvas.width, this.canvas.height);
+        try {
+            // 캐릭터 (바위 위에 보이도록)
+            this.character.render(this.ctx);
+        } catch (e) { console.error('캐릭터 렌더링 에러:', e); }
+
+        try {
+            // 파티클 (최상위)
+            this.renderParticles();
+        } catch (e) { console.error('파티클 렌더링 에러:', e); }
+
+        try {
+            // 비구름 시스템 렌더링 (최상위)
+            this.rainCloud.render(this.ctx, this.canvas.width, this.canvas.height);
+        } catch (e) { console.error('비구름 렌더링 에러:', e); }
     }
 
     /**
@@ -702,8 +922,13 @@ class CozyGardenGame {
         gameState.lastFrameTime = performance.now();
 
         const gameLoop = (currentTime) => {
-            this.update(currentTime);
-            this.render();
+            try {
+                this.update(currentTime);
+                this.render();
+            } catch (e) {
+                console.error('Game Loop Error:', e);
+                // 반복적인 alert 방지를 위해 심각한 경우만 멈춤
+            }
             requestAnimationFrame(gameLoop);
         };
 
@@ -712,10 +937,21 @@ class CozyGardenGame {
 }
 
 // ============ 게임 시작 ============
-document.addEventListener('DOMContentLoaded', () => {
-    const game = new CozyGardenGame();
-    game.start();
+// ============ 게임 시작 ============
+window.onerror = function (msg, url, lineNo, columnNo, error) {
+    alert('❌ 시스템 오류:\n' + msg + '\nLine: ' + lineNo);
+    return false;
+};
 
-    // 전역 접근 (디버깅용)
-    window.game = game;
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const game = new CozyGardenGame();
+        game.start();
+
+        // 전역 접근 (디버깅용)
+        window.game = game;
+    } catch (e) {
+        alert('❌ 게임 초기화 실패:\n' + e.message);
+        console.error(e);
+    }
 });
